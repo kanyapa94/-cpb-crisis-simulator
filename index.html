@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CPB Crisis Simulator — Massive Air Embolism</title>
+<style>
+:root{
+  --bg:#061018;--panel:#0c1b26;--panel2:#102431;--line:#24404f;
+  --text:#eef9ff;--muted:#8ea9b9;--cyan:#4ad8ff;--red:#ff5667;
+  --orange:#ffb44c;--green:#45e0a2;--blue:#4aa8ff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:radial-gradient(circle at 85% 0%,rgba(74,216,255,.08),transparent 30%),
+             linear-gradient(180deg,#050a0f,#08141d);
+  color:var(--text);min-height:100vh
+}
+button{font:inherit}
+.topbar{
+  position:sticky;top:0;z-index:30;display:flex;justify-content:space-between;align-items:center;
+  padding:14px 4vw;border-bottom:1px solid rgba(255,255,255,.07);
+  background:rgba(4,10,15,.88);backdrop-filter:blur(12px)
+}
+.brand{display:flex;align-items:center;gap:11px;font-weight:900}
+.brandMark{width:38px;height:38px;border-radius:12px;background:#0e2633;border:1px solid #285267;
+display:grid;place-items:center;color:var(--cyan)}
+.phasePills{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.pill{font-size:11px;font-weight:800;color:#7695a6;border:1px solid #203b49;border-radius:999px;padding:7px 10px}
+.pill.active{color:#dff8ff;border-color:#3d829d;background:rgba(74,216,255,.09)}
+.pill.done{color:#84efc1;border-color:rgba(69,224,162,.35)}
+.page{max-width:1280px;margin:auto;padding:26px 4vw 55px}
+.header{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:20px}
+.eyebrow{font-size:12px;letter-spacing:1.3px;font-weight:900;color:#72dcf9}
+h1{font-size:clamp(29px,4vw,52px);margin:7px 0 4px;letter-spacing:-1.2px}
+.subtitle{color:var(--muted);margin:0;line-height:1.6}
+.scenarioTag{padding:10px 13px;border-radius:13px;background:rgba(255,86,103,.1);border:1px solid rgba(255,86,103,.3);color:#ff9ba4;font-weight:900;white-space:nowrap}
+.grid{display:grid;grid-template-columns:1.55fr .85fr;gap:17px}
+.card{
+  background:linear-gradient(180deg,rgba(14,31,42,.97),rgba(8,20,28,.97));
+  border:1px solid rgba(112,175,205,.15);border-radius:22px;
+  box-shadow:0 20px 60px rgba(0,0,0,.28)
+}
+.monitor{padding:17px}
+.cardTitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}
+.cardTitle h2{font-size:17px;margin:0}
+.live{font-size:11px;color:#ff9ca6;font-weight:900;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.screen{background:#02070a;border:1px solid #183541;border-radius:17px;padding:15px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.metric{padding:12px;background:#07131a;border:1px solid #17313e;border-radius:13px}
+.metric span{display:block;color:#7595a7;font-size:10px;margin-bottom:4px}
+.metric strong{font-size:23px;color:#50dfff}
+.metric small{color:#718b99;font-size:9px}
+.metric.critical strong{color:var(--red)}
+.wave{height:95px;margin-top:10px;border-radius:13px;overflow:hidden;border:1px solid #17313e;background:#031017;position:relative}
+.wave:before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:18px 18px}
+.wave svg{position:absolute;width:100%;height:100%}
+.alarm{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:11px;padding:12px;border-radius:13px;background:rgba(255,86,103,.08);border:1px solid rgba(255,86,103,.32)}
+.alarm strong{color:#ff8e99;font-size:13px}
+.alarm p{font-size:11px;color:#a9bec9;margin:3px 0 0}
+.light{width:15px;height:15px;border-radius:50%;background:var(--red);box-shadow:0 0 24px var(--red);animation:blink .55s alternate infinite}
+@keyframes blink{to{opacity:.22;transform:scale(.75)}}
+.circuit{margin-top:11px;padding:13px;background:#07131a;border:1px solid #17313e;border-radius:13px}
+.circuitHead{font-size:11px;color:#829eae;margin-bottom:11px;display:flex;justify-content:space-between}
+.tube{height:25px;border-radius:999px;background:#173b4e;border:2px solid #2f6177;position:relative;overflow:hidden}
+.bubble{position:absolute;top:4px;width:12px;height:12px;border-radius:50%;background:#f1fdff;border:2px solid #90edff;box-shadow:0 0 8px #81e8ff;animation:air 3s linear infinite}
+.bubble:nth-child(2){animation-delay:.65s;width:8px;height:8px;top:6px}
+.bubble:nth-child(3){animation-delay:1.25s;width:15px;height:15px;top:3px}
+.bubble:nth-child(4){animation-delay:1.9s;width:7px;height:7px;top:7px}
+@keyframes air{from{left:-7%}to{left:107%}}
+.detector{position:absolute;left:65%;top:-8px;height:37px;width:31px;border:3px solid var(--orange);border-radius:7px;box-shadow:0 0 14px rgba(255,180,76,.4)}
+.side{padding:17px}
+.timer{text-align:center;padding:17px;border-radius:16px;background:#07131a;border:1px solid #17313e}
+.timerLabel{font-size:10px;font-weight:900;color:#7895a6;letter-spacing:1px}
+.timerNum{font-size:66px;line-height:1;font-weight:950;color:var(--red);margin:8px 0 3px}
+.progress{height:7px;background:#17303b;border-radius:999px;overflow:hidden;margin-top:10px}
+.progress div{height:100%;width:100%;background:linear-gradient(90deg,var(--red),var(--orange));transition:width .2s linear}
+.question{margin-top:15px}
+.question h3{margin:0 0 7px;font-size:18px}
+.question p{color:#a6bdc9;font-size:13px;line-height:1.55;margin:0}
+.choices{display:grid;gap:9px;margin-top:13px}
+.choice{
+  text-align:left;width:100%;padding:12px 13px;color:#e9f6fc;background:#0a1a24;
+  border:1px solid #264454;border-radius:13px;cursor:pointer;font-weight:750;line-height:1.45
+}
+.choice:hover{border-color:#42809d;background:#0d2230}
+.choice.correct{background:rgba(69,224,162,.11);border-color:rgba(69,224,162,.55)}
+.choice.wrong{background:rgba(255,86,103,.11);border-color:rgba(255,86,103,.55)}
+.feedback{margin-top:11px;min-height:54px;padding:11px;border:1px dashed #2a4a5b;border-radius:12px;color:#a9c1ce;font-size:12px;line-height:1.5}
+.phasePanel{display:none;margin-top:17px}
+.phasePanel.show{display:block}
+.phaseCard{padding:18px}
+.phaseHead{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:13px}
+.phaseHead h2{margin:0;font-size:20px}
+.phaseNo{font-size:11px;font-weight:900;color:#7ee8ff}
+.step{background:#091923;border:1px solid #203b49;border-radius:15px;padding:14px;margin-top:11px}
+.step h3{font-size:15px;margin:0 0 5px}
+.step p{color:#9db4c1;font-size:12px;line-height:1.55;margin:0 0 10px}
+.stepActions{display:flex;gap:8px;flex-wrap:wrap}
+.stepBtn{border:1px solid #315366;background:#102632;color:#e9f7fd;padding:10px 12px;border-radius:11px;cursor:pointer;font-weight:800}
+.stepBtn:hover{border-color:#55a0be}
+.stepBtn.ok{border-color:rgba(69,224,162,.55);background:rgba(69,224,162,.1)}
+.stepBtn.no{border-color:rgba(255,86,103,.55);background:rgba(255,86,103,.1)}
+.notice{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(255,180,76,.08);border:1px solid rgba(255,180,76,.28);color:#d9c69d;font-size:11px;line-height:1.5}
+.nextBtn{margin-top:12px;border:0;border-radius:12px;background:linear-gradient(135deg,#45d9ff,#80ebff);color:#05202a;padding:11px 16px;font-weight:950;cursor:pointer;display:none}
+.nextBtn.show{display:inline-block}
+.checklist{display:grid;gap:9px;margin-top:11px}
+.check{display:flex;align-items:center;gap:10px;background:#091923;border:1px solid #203b49;border-radius:12px;padding:11px;color:#bfd0da;font-size:13px}
+.check input{accent-color:#45dfa1;width:18px;height:18px}
+.restartBox{display:none;text-align:center;padding:25px}
+.restartBox.show{display:block}
+.bigState{font-size:30px;font-weight:950;margin-bottom:8px}
+.gameover{color:#ff6d7c}.success{color:#5fe7ae}
+.primary{border:0;border-radius:12px;background:#eaf8ff;color:#08202a;padding:11px 16px;font-weight:900;cursor:pointer}
+.evidence{font-size:11px;color:#708d9e;line-height:1.5;margin-top:15px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.header{align-items:flex-start;flex-direction:column}.phasePills{display:none}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><div class="brandMark">CPB</div><div>Crisis Simulator</div></div>
+  <div class="phasePills">
+    <div id="p1" class="pill active">1 Detection</div>
+    <div id="p2" class="pill">2 Immediate Action</div>
+    <div id="p3" class="pill">3 Management</div>
+    <div id="p4" class="pill">4 Re-evaluation</div>
+  </div>
+</div>
+
+<main class="page">
+  <div class="header">
+    <div>
+      <div class="eyebrow">EMERGENCY SCENARIO 01</div>
+      <h1>Massive Air Embolism</h1>
+      <p class="subtitle">Interactive CPB crisis training • recognition → immediate response → coordinated management → reassessment</p>
+    </div>
+    <div class="scenarioTag">🚨 HIGH-RISK EVENT</div>
+  </div>
+
+  <section id="phase1" class="grid">
+    <div class="card monitor">
+      <div class="cardTitle"><h2>Heart–Lung Machine Monitor</h2><span class="live">● ALARM ACTIVE</span></div>
+      <div class="screen">
+        <div class="metrics">
+          <div class="metric"><span>PUMP FLOW</span><strong>4.31</strong> <small>L/min</small></div>
+          <div class="metric"><span>MAP</span><strong>62</strong> <small>mmHg</small></div>
+          <div class="metric"><span>ARTERIAL LINE PRESSURE</span><strong>246</strong> <small>mmHg</small></div>
+          <div class="metric critical"><span>RESERVOIR LEVEL</span><strong>110</strong> <small>mL</small></div>
+        </div>
+        <div class="wave">
+          <svg viewBox="0 0 800 100" preserveAspectRatio="none">
+            <polyline fill="none" stroke="#4ad8ff" stroke-width="3"
+            points="0,55 35,55 50,38 68,73 85,27 105,62 137,55 175,55 191,39 207,74 224,28 246,61 278,55 315,55 332,39 349,72 365,30 388,61 420,55 458,55 474,38 491,73 508,27 529,62 561,55 600,55 617,39 634,73 650,30 671,61 704,55 744,55 761,38 779,71 800,32"/>
+          </svg>
+        </div>
+        <div class="alarm">
+          <div><strong>CRITICAL LOW RESERVOIR LEVEL</strong><p>Air bubble detector triggered • suspected arterial circuit air</p></div>
+          <div class="light"></div>
+        </div>
+        <div class="circuit">
+          <div class="circuitHead"><span>ARTERIAL LINE</span><span>AIR DETECTOR</span></div>
+          <div class="tube">
+            <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
+            <div class="detector"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="card side">
+      <div class="timer">
+        <div class="timerLabel">FIRST DECISION WINDOW</div>
+        <div id="timer" class="timerNum">15</div>
+        <div style="font-size:11px;color:#7693a4">SECONDS REMAINING</div>
+        <div class="progress"><div id="progress"></div></div>
+      </div>
+      <div class="question">
+        <h3>What is your immediate action?</h3>
+        <p>ระบบตรวจพบระดับเลือดใน reservoir ต่ำวิกฤต และมี air ผ่าน arterial circuit</p>
+        <div class="choices">
+          <button class="choice" data-answer="wrong">A. เปิดสารน้ำเข้า Reservoir ต่อทันทีโดยให้ pump ทำงานต่อ</button>
+          <button class="choice" data-answer="correct">B. หยุด arterial pump / ป้องกันการส่ง air ต่อ และ clamp arterial line ตาม emergency response</button>
+        </div>
+        <div id="feedback" class="feedback">เลือกคำตอบภายใน 15 วินาทีเพื่อเข้าสู่ขั้นตอนถัดไป</div>
+      </div>
+    </aside>
+  </section>
+
+  <section id="fail" class="card restartBox">
+    <div class="bigState gameover">Scenario Failed</div>
+    <p style="color:#a7bdc9">เกิดการส่ง air ต่อเข้าสู่ systemic circulation หรือหมดเวลาการตอบสนองขั้นแรก</p>
+    <button class="primary" onclick="location.reload()">Restart Scenario</button>
+  </section>
+
+  <section id="phase2" class="phasePanel">
+    <div class="card phaseCard">
+      <div class="phaseHead"><div><div class="phaseNo">PHASE 2</div><h2>⚡ Immediate Action</h2></div><span style="color:#5be4ae;font-weight:900">INITIAL HAZARD CONTROLLED</span></div>
+      <div class="step">
+        <h3>Immediate response confirmed</h3>
+        <p>หยุดการส่ง air ต่อเข้าสู่ arterial circulation และแจ้งทีมทันที จากนั้นเข้าสู่การประเมิน source และ coordinated emergency management</p>
+        <div class="notice">Simulator นี้เน้นการฝึก decision sequence ไม่ใช้แทน emergency protocol ของหน่วยงานหรือคำสั่งของศัลยแพทย์/วิสัญญีแพทย์</div>
+      </div>
+      <button id="to3" class="nextBtn show">Continue to Emergency Management →</button>
+    </div>
+  </section>
+
+  <section id="phase3" class="phasePanel">
+    <div class="card phaseCard">
+      <div class="phaseHead"><div><div class="phaseNo">PHASE 3</div><h2>🛠️ Emergency Management</h2></div><span style="color:#ffca74;font-weight:900">SEQUENTIAL STEPS</span></div>
+
+      <div class="step">
+        <h3>3.1 Patient positioning</h3>
+        <p>เลือกท่าที่ใช้ใน scenario protocol สำหรับ massive arterial air embolism</p>
+        <div class="stepActions">
+          <button class="stepBtn" onclick="stepChoice(this,false,'pos')">Reverse Trendelenburg</button>
+          <button class="stepBtn" onclick="stepChoice(this,true,'pos')">Trendelenburg</button>
+        </div>
+        <div id="posMsg" class="feedback">ยังไม่ได้เลือก</div>
+      </div>
+
+      <div class="step">
+        <h3>3.2 Circuit air control / de-airing</h3>
+        <p>ยืนยันการควบคุม source, เพิ่มระดับ reservoir ให้กลับสู่ช่วงปลอดภัย และ de-air circuit ตาม emergency procedure ของระบบที่ใช้งาน</p>
+        <div class="stepActions">
+          <button id="purgeBtn" class="stepBtn" onclick="completeSimple(this,'purgeMsg')">✓ Perform circuit de-airing sequence</button>
+        </div>
+        <div id="purgeMsg" class="feedback">รอการดำเนินการ</div>
+      </div>
+
+      <div class="step">
+        <h3>3.3 Escalation: cerebral air management</h3>
+        <p>จำลองการแจ้งศัลยแพทย์และวิสัญญีแพทย์เพื่อพิจารณา advanced management เช่น retrograde cerebral perfusion (RCP) และ aortic/root de-airing เมื่อเหมาะสม</p>
+        <div class="stepActions">
+          <button id="rcpBtn" class="stepBtn" onclick="completeSimple(this,'rcpMsg')">📞 Activate team protocol / prepare RCP if ordered</button>
+        </div>
+        <div id="rcpMsg" class="feedback">รอการประสานทีม</div>
+        <div class="notice"><strong>Evidence/safety note:</strong> Simulator ไม่กำหนด RCP flow/pressure เป็นค่าตายตัว เนื่องจากรายงานทางคลินิกใช้เทคนิคและเป้าหมายแตกต่างกัน จึงควรอ้างอิง protocol ของศูนย์และคำสั่งทีมผ่าตัด</div>
+      </div>
+
+      <button id="to4" class="nextBtn">Continue to Re-evaluation →</button>
+    </div>
+  </section>
+
+  <section id="phase4" class="phasePanel">
+    <div class="card phaseCard">
+      <div class="phaseHead"><div><div class="phaseNo">PHASE 4</div><h2>🏁 Evaluation & Resolution</h2></div><span style="color:#77e9b9;font-weight:900">REASSESS BEFORE RESTART</span></div>
+
+      <div class="step">
+        <h3>4.1 Re-evaluation checklist</h3>
+        <p>ยืนยันความพร้อมของระบบก่อนพิจารณากลับเข้าสู่ CPB ตามคำสั่งทีม</p>
+        <div class="checklist">
+          <label class="check"><input type="checkbox" class="recheck"> Reservoir level returned to safe operating range</label>
+          <label class="check"><input type="checkbox" class="recheck"> No visible / detected air in arterial circuit</label>
+          <label class="check"><input type="checkbox" class="recheck"> Gas supply / oxygenator function reviewed</label>
+          <label class="check"><input type="checkbox" class="recheck"> Blood gas and arterial line pressure reviewed</label>
+          <label class="check"><input type="checkbox" class="recheck"> Team confirms readiness to resume perfusion</label>
+        </div>
+      </div>
+
+      <div class="step">
+        <h3>4.2 Controlled return to CPB</h3>
+        <p>เมื่อ checklist ครบและทีมยืนยัน ให้จำลองการเพิ่ม flow อย่างควบคุมพร้อมติดตาม pressure, reservoir level และ air detector อย่างต่อเนื่อง</p>
+        <button id="finishBtn" class="nextBtn">Restart CPB Simulation</button>
+      </div>
+
+      <div id="completeBox" class="restartBox">
+        <div class="bigState success">Scenario Complete ✓</div>
+        <p style="color:#a7bdc9">ผ่านลำดับ Recognition → Immediate Action → Emergency Management → Re-evaluation</p>
+        <button class="primary" onclick="location.reload()">Practice Again</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="evidence">
+    Educational simulation prototype. Clinical content must be reviewed and approved by the local cardiac surgery/perfusion team before research or staff training use. Historical and case-report literature describes immediate interruption of further air delivery, Trendelenburg positioning in some protocols, circuit de-airing, hypothermia/hyperoxia, and selected use of RCP; exact advanced-management parameters vary by center and case.
+  </div>
+</main>
+
+<script>
+let remain=15, answered=false;
+const timer=document.getElementById('timer'), progress=document.getElementById('progress');
+const fb=document.getElementById('feedback'), fail=document.getElementById('fail');
+const choices=[...document.querySelectorAll('.choice')];
+
+const loop=setInterval(()=>{
+ if(answered) return;
+ remain--;
+ timer.textContent=remain;
+ progress.style.width=(remain/15*100)+'%';
+ if(remain<=0){
+   clearInterval(loop); answered=true;
+   document.getElementById('phase1').style.display='none';
+   fail.classList.add('show');
+ }
+},1000);
+
+choices.forEach(btn=>btn.onclick=()=>{
+ if(answered)return;
+ answered=true;clearInterval(loop);
+ if(btn.dataset.answer==='correct'){
+   btn.classList.add('correct');
+   fb.innerHTML='<b style="color:#61e8ae">Correct</b><br>Priority is to immediately prevent further arterial air delivery and activate the emergency response.';
+   setTimeout(()=>{
+     document.getElementById('phase1').style.display='none';
+     document.getElementById('phase2').classList.add('show');
+     setPhase(2);
+   },750);
+ }else{
+   btn.classList.add('wrong');
+   fb.innerHTML='<b style="color:#ff7885">Incorrect priority</b><br>Continuing pump flow while arterial air is present can worsen systemic air delivery.';
+   setTimeout(()=>{
+     document.getElementById('phase1').style.display='none';
+     fail.classList.add('show');
+   },850);
+ }
+ choices.forEach(b=>b.disabled=true);
+};
+
+document.getElementById('to3').onclick=()=>{
+ document.getElementById('phase2').classList.remove('show');
+ document.getElementById('phase3').classList.add('show');
+ setPhase(3);
+};
+
+let done={pos:false,purge:false,rcp:false};
+function stepChoice(btn,correct,key){
+ const siblings=[...btn.parentElement.querySelectorAll('.stepBtn')];
+ siblings.forEach(x=>x.disabled=true);
+ if(correct){
+   btn.classList.add('ok'); done[key]=true;
+   document.getElementById(key+'Msg').innerHTML='<b style="color:#61e8ae">Correct</b><br>Scenario protocol step completed.';
+ }else{
+   btn.classList.add('no');
+   document.getElementById(key+'Msg').innerHTML='<b style="color:#ff7885">Try again</b><br>Review the scenario protocol before proceeding.';
+   setTimeout(()=>{siblings.forEach(x=>x.disabled=false);btn.classList.remove('no')},900);
+ }
+ checkPhase3();
+}
+function completeSimple(btn,msgId){
+ btn.classList.add('ok');btn.disabled=true;
+ document.getElementById(msgId).innerHTML='<b style="color:#61e8ae">Completed</b><br>Step acknowledged.';
+ if(msgId==='purgeMsg')done.purge=true;
+ if(msgId==='rcpMsg')done.rcp=true;
+ checkPhase3();
+}
+function checkPhase3(){
+ if(done.pos&&done.purge&&done.rcp)document.getElementById('to4').classList.add('show');
+}
+document.getElementById('to4').onclick=()=>{
+ document.getElementById('phase3').classList.remove('show');
+ document.getElementById('phase4').classList.add('show');
+ setPhase(4);
+};
+const checks=[...document.querySelectorAll('.recheck')];
+checks.forEach(c=>c.onchange=()=>{
+ const all=checks.every(x=>x.checked);
+ document.getElementById('finishBtn').classList.toggle('show',all);
+});
+document.getElementById('finishBtn').onclick=()=>{
+ document.getElementById('completeBox').classList.add('show');
+ document.getElementById('finishBtn').disabled=true;
+};
+function setPhase(n){
+ for(let i=1;i<=4;i++){
+   const p=document.getElementById('p'+i);
+   p.classList.remove('active');
+   if(i<n)p.classList.add('done');
+ }
+ document.getElementById('p'+n).classList.add('active');
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
