@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<title>CPB Scenario: Acute Oxygenator Failure</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:#020617;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{min-height:100dvh}
+.app{max-width:920px;margin:auto;padding:16px 14px 30px}
+.panel{background:#111827;border:1px solid #1f2937;border-radius:20px;padding:16px;box-shadow:0 22px 60px rgba(0,0,0,.35)}
+.header{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;border-bottom:1px solid #374151;padding-bottom:9px;margin-bottom:10px}
+.header h1{margin:0;font-size:17px}.sub{margin-top:3px;color:#94a3b8;font-size:9px}.meta{text-align:right;font-size:9px;line-height:1.45}
+.time{color:#f87171;font-size:18px;font-weight:900;font-family:ui-monospace,monospace}.score{color:#fde047;font-weight:900;font-family:ui-monospace,monospace}
+.phase{font-size:10px;color:#7dd3fc;font-weight:800;margin-top:4px}
+.dashboard{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:9px}
+.metric{background:#1f2937;border:1px solid #374151;border-radius:11px;padding:8px 6px;text-align:center;min-width:0}
+.metric small{display:block;color:#9ca3af;font-size:8px;margin-bottom:3px;line-height:1.15}.metric b{font-size:18px;font-family:ui-monospace,monospace;line-height:1.1;white-space:nowrap}
+.danger{color:#ef4444;animation:pulse 1s infinite}.good{color:#4ade80}@keyframes pulse{50%{opacity:.45}}
+.lineCard{background:#1f2937;border:1px solid #374151;border-radius:11px;padding:8px;margin-bottom:10px}
+.lineLabel{font-size:8px;color:#9ca3af;margin-bottom:5px}
+.line{height:20px;border-radius:999px;border:2px solid #475569;background:#450a0a;transition:.5s;position:relative;overflow:hidden}
+.line.redline{background:#b91c1c}.line:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,.08),transparent 35%,rgba(255,255,255,.05))}
+.console{background:#000;border:1px solid #374151;border-radius:11px;padding:9px;min-height:62px;color:#4ade80;font-family:ui-monospace,monospace;font-size:10px;line-height:1.4;margin-bottom:10px}
+.prompt{font-size:13px;font-weight:800;margin:0 0 8px}
+.actions{display:grid;gap:10px}
+button{width:100%;border:1px solid transparent;border-radius:12px;padding:13px 14px;color:#fff;font-weight:800;font-size:14px;text-align:left}
+button:active{transform:scale(.99)}
+.blue{background:#2563eb}.red{background:#dc2626}.yellow{background:#ca8a04}.purple{background:#7e22ce}.green{background:#16a34a}.gray{background:#374151}.slate{background:#334155}.cyan{background:#0e7490}
+button.used{opacity:.45}
+.feedback{margin-top:12px;border:1px dashed #475569;border-radius:12px;padding:11px;font-size:12px;color:#cbd5e1;line-height:1.5;min-height:48px}
+.statusGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.status{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px}
+.status span{display:block;font-size:9px;color:#94a3b8}.status b{display:block;font-size:11px;margin-top:4px}
+.history{margin-top:14px;background:#0b1220;border:1px solid #243041;border-radius:12px;padding:10px}
+.history h3{font-size:11px;margin:0 0 8px;color:#93c5fd}
+.history ul{margin:0;padding-left:18px;color:#94a3b8;font-size:10px;line-height:1.5}
+.footer{font-size:9px;color:#64748b;line-height:1.5;margin-top:12px}
+@media(max-width:640px){
+.dashboard{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.metric{padding:7px 4px}
+.metric small{font-size:7px}
+.metric b{font-size:15px}
+.header{flex-direction:row;align-items:flex-start}
+.header h1{font-size:15px}
+.meta{text-align:right;font-size:8px}
+.time{font-size:15px}
+.panel{padding:11px}
+.app{padding:10px 8px 22px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="panel">
+    <div class="header">
+      <div>
+        <h1>CPB Scenario: Acute Oxygenator Failure</h1>
+        <div class="sub">Case 02 • Multi-choice decision simulation</div>
+        <div id="phaseLabel" class="phase">PHASE: DETECTION</div>
+      </div>
+      <div class="meta">
+        <div>เวลาที่เหลือ: <span id="time" class="time">45s</span></div>
+        <div>คะแนน: <span id="score" class="score">100</span></div>
+      </div>
+    </div>
+
+    <div class="dashboard">
+      <div class="metric">
+        <small>Arterial pO₂</small>
+        <b id="po2" class="danger">55 mmHg</b>
+      </div>
+      <div class="metric">
+        <small>Arterial SaO₂</small>
+        <b id="sao2" class="danger">78 %</b>
+      </div>
+      <div class="metric">
+        <small>Arterial Line Color</small>
+        <b id="lineText" style="font-size:14px">🟤 Dark</b>
+      </div>
+    </div>
+
+    <div class="lineCard">
+      <div class="lineLabel">ARTERIAL LINE SIMULATION</div>
+      <div id="arterialLine" class="line"></div>
+    </div>
+
+    <div id="console" class="console">🚨 ค่า Arterial pO₂ และ SaO₂ ลดลงรวดเร็ว เลือดในสาย Arterial คล้ำลงอย่างชัดเจน</div>
+
+    <div class="prompt" id="prompt">คุณจะทำอะไรเป็นลำดับแรก?</div>
+    <div id="actions" class="actions"></div>
+    <div id="feedback" class="feedback">เลือก action ที่เหมาะสมที่สุดในขั้นตอนนี้</div>
+
+    <div class="statusGrid">
+      <div class="status"><span>Pump</span><b id="pumpState">RUNNING</b></div>
+      <div class="status"><span>Line Clamp</span><b id="clampState">OPEN</b></div>
+      <div class="status"><span>Gas Source</span><b id="gasState">UNCHECKED</b></div>
+      <div class="status"><span>Oxygenator</span><b id="oxyState">NOT CHANGED</b></div>
+    </div>
+
+    <div class="history">
+      <h3>DECISION LOG</h3>
+      <ul id="historyList"></ul>
+    </div>
+
+    <div class="footer">Educational simulation prototype only. ก่อนนำไปใช้ฝึกบุคลากรหรือทำวิจัย ควรให้ทีม perfusion/cardiac surgery ตรวจสอบ clinical sequence และ protocol ของหน่วยงานก่อน</div>
+  </div>
+</div>
+
+<script>
+const INITIAL = {
+  phase:'DETECTION', pO2:55, saO2:78, timeLeft:45, score:100,
+  isPumpRunning:true, isLineClamped:false, isGasChecked:false,
+  isOxygenatorChanged:false, arterialLineColor:'Dark',
+  message:'🚨 ค่า Arterial pO₂ และ SaO₂ ลดลงรวดเร็ว เลือดในสาย Arterial คล้ำลงอย่างชัดเจน',
+  history:[], used:{}
+};
+let state={...INITIAL,history:[],used:{}};
+let timerId=null;
+const $=id=>document.getElementById(id);
+
+function log(text){
+  state.history.push(text);
+}
+function score(delta){
+  state.score=Math.max(0,state.score+delta);
+}
+function mark(action){state.used[action]=true}
+
+const choices={
+  DETECTION:[
+    {id:'CHECK_GAS',label:'🛠️ ตรวจสาย O₂ / gas source / flowmeter',cls:'blue'},
+    {id:'INCREASE_FIO2',label:'💨 เพิ่ม FiO₂ / gas flow ทั้งที่เปิดสูงอยู่แล้ว',cls:'cyan'},
+    {id:'INCREASE_FLOW',label:'⬆️ เพิ่ม Pump Flow เพื่อแก้ SaO₂ ต่ำ',cls:'red'},
+    {id:'CHANGE_NOW',label:'🚨 เปลี่ยน Oxygenator ทันทีโดยไม่เช็ก external gas source',cls:'yellow'}
+  ],
+  IMMEDIATE_2:[
+    {id:'DECIDE_CHANGE',label:'🔄 ยืนยัน Oxygenator failure และเตรียม Emergency Changeout',cls:'yellow'},
+    {id:'REPEAT_ABG',label:'🧪 รอเจาะ ABG ซ้ำก่อนตัดสินใจ',cls:'slate'},
+    {id:'INCREASE_SWEEP',label:'💨 เพิ่ม Sweep Gas ต่อ แม้ external gas source ปกติ',cls:'cyan'},
+    {id:'REDUCE_FLOW',label:'⬇️ ลด Pump Flow เพื่อรอประเมิน',cls:'red'}
+  ],
+  MANAGEMENT_1:[
+    {id:'NOTIFY_STOP_CLAMP',label:'🛑 แจ้งทีม + Stop Pump + Clamp Arterial/Venous',cls:'red'},
+    {id:'CUT_FIRST',label:'✂️ เริ่มตัดต่อสายทันทีขณะ Pump ยังทำงาน',cls:'red'},
+    {id:'PURGE_FIRST',label:'🫧 เปิด Purge ก่อนโดยยังไม่ isolate circuit',cls:'purple'},
+    {id:'WAIT_SURGEON',label:'⏳ รอศัลยแพทย์ตอบก่อนโดยไม่ควบคุม circuit',cls:'slate'}
+  ],
+  MANAGEMENT_2:[
+    {id:'SWAP_AND_DEAIR',label:'🔄 สลับเข้า Oxygenator ใหม่ + De-air จนไม่พบ air',cls:'purple'},
+    {id:'RESUME_EARLY',label:'▶ Resume Pump ทันทีหลังต่อสายโดยยังไม่ de-air',cls:'red'},
+    {id:'CHECK_CONNECTION',label:'🔎 ตรวจ connection/line orientation ก่อนดำเนินการต่อ',cls:'blue'},
+    {id:'REFILL_ONLY',label:'💧 เติม volume อย่างเดียวโดยยังไม่เปลี่ยน Oxygenator',cls:'cyan'}
+  ],
+  RESOLUTION:[
+    {id:'VERIFY_THEN_RESUME',label:'✅ ตรวจ arterial color + gas exchange แล้วค่อย Resume CPB',cls:'green'},
+    {id:'FULL_FLOW_NOW',label:'⚡ เปิด Full Flow ทันทีโดยไม่ reassess',cls:'red'},
+    {id:'ABG_ONLY',label:'🧪 เจาะ ABG อย่างเดียวแต่ยังไม่ประเมิน circuit',cls:'slate'},
+    {id:'COLOR_ONLY',label:'👁️ ดูสีเลือดอย่างเดียวแล้ว Resume',cls:'yellow'}
+  ]
+};
+
+function renderActions(){
+  let key=state.phase;
+  if(state.phase==='MANAGEMENT' && !state.isLineClamped) key='MANAGEMENT_1';
+  if(state.phase==='MANAGEMENT' && state.isLineClamped && !state.isOxygenatorChanged) key='MANAGEMENT_2';
+
+  const list=choices[key]||[];
+  $('actions').innerHTML=list.map(c=>
+    `<button class="${c.cls} ${state.used[c.id]?'used':''}" ${state.used[c.id]?'disabled':''} onclick="handle('${c.id}')">${c.label}</button>`
+  ).join('');
+
+  const prompts={
+    DETECTION:'คุณจะทำอะไรเป็นลำดับแรก?',
+    IMMEDIATE_2:'External gas source ปกติ แต่ pO₂ ยังลดลง คุณจะตัดสินใจอย่างไร?',
+    MANAGEMENT_1:'เมื่อยืนยันว่าต้อง changeout คุณจะควบคุมวงจรอย่างไร?',
+    MANAGEMENT_2:'หลัง isolate circuit แล้ว ขั้นตอนถัดไปคืออะไร?',
+    RESOLUTION:'ก่อนกลับเข้าสู่ CPB ปกติ คุณจะทำอะไร?',
+    SUCCESS:'Scenario complete',
+    GAMEOVER:'Scenario ended'
+  };
+  $('prompt').textContent=prompts[key]||prompts[state.phase]||'';
+}
+
+function render(){
+  $('time').textContent=state.timeLeft+'s';
+  $('score').textContent=state.score;
+  $('po2').textContent=Math.round(state.pO2)+' mmHg';
+  $('sao2').textContent=state.saO2.toFixed(1)+' %';
+  $('console').textContent=state.message;
+  $('phaseLabel').textContent='PHASE: '+state.phase;
+  $('pumpState').textContent=state.isPumpRunning?'RUNNING':'STOPPED';
+  $('clampState').textContent=state.isLineClamped?'CLAMPED':'OPEN';
+  $('gasState').textContent=state.isGasChecked?'CHECKED / NORMAL':'UNCHECKED';
+  $('oxyState').textContent=state.isOxygenatorChanged?'CHANGED':'NOT CHANGED';
+
+  if(state.arterialLineColor==='Red'){
+    $('arterialLine').classList.add('redline');
+    $('lineText').textContent='🔴 Red';
+    $('po2').className='good'; $('sao2').className='good';
+  }else{
+    $('arterialLine').classList.remove('redline');
+    $('lineText').textContent='🟤 Dark';
+    $('po2').className=state.pO2<60?'danger':'good';
+    $('sao2').className=state.saO2<80?'danger':'good';
+  }
+
+  $('historyList').innerHTML=state.history.slice(-6).map(x=>`<li>${x}</li>`).join('');
+  renderActions();
+
+  if(state.phase==='SUCCESS' || state.phase==='GAMEOVER'){
+    $('actions').innerHTML=`<button class="gray" onclick="resetSim()">🔄 เล่นใหม่อีกครั้ง</button>`;
+  }
+}
+
+function feedback(text,type=''){
+  $('feedback').innerHTML=text;
+  $('feedback').style.borderColor=type==='good'?'#16a34a':type==='bad'?'#dc2626':'#475569';
+}
+
+function handle(a){
+  mark(a);
+
+  if(state.phase==='DETECTION'){
+    if(a==='CHECK_GAS'){
+      state.isGasChecked=true;
+      state.phase='IMMEDIATE_2';
+      state.message='✓ External gas source และ flowmeter ปกติ แต่ oxygenation ยังแย่ลง';
+      log('✓ Checked external gas source first');
+      feedback('ถูกต้อง: ตัด external gas failure ออกก่อน แล้วประเมิน oxygenator ต่อ','good');
+    }else if(a==='CHANGE_NOW'){
+      score(-15);
+      state.phase='MANAGEMENT';
+      state.message='⚠️ ข้าม external gas check และเข้าสู่ changeout';
+      log('⚠️ Changed immediately before gas check (-15)');
+      feedback('ทำได้ในภาวะวิกฤตบางสถานการณ์ แต่ใน scenario นี้ถือว่าข้าม safety check จึงหัก 15 คะแนน');
+    }else if(a==='INCREASE_FIO2'){
+      score(-5);
+      state.message='⚠️ FiO₂/gas support สูงอยู่แล้ว และ pO₂ ยังตก';
+      log('△ Increased FiO₂/gas flow without resolving cause (-5)');
+      feedback('ถูกบางส่วนแต่ไม่แก้สาเหตุหลัก และเสียเวลา -5 คะแนน');
+    }else if(a==='INCREASE_FLOW'){
+      score(-20);
+      state.message='❌ Pump flow เพิ่มขึ้น แต่ oxygenator ยังแลกเปลี่ยนแก๊สไม่ได้';
+      log('✗ Increased pump flow during severe oxygenation failure (-20)');
+      feedback('ไม่ใช่ first priority และอาจเพิ่มการส่งเลือดที่ oxygenate ไม่เพียงพอ -20 คะแนน','bad');
+    }
+  }
+
+  else if(state.phase==='IMMEDIATE_2'){
+    if(a==='DECIDE_CHANGE'){
+      state.phase='MANAGEMENT';
+      state.message='🛠️ ยืนยัน oxygenator failure เตรียม emergency changeout';
+      log('✓ Decision: emergency oxygenator changeout');
+      feedback('ถูกต้อง: external gas ปกติแต่ oxygenation ยังล้มเหลว จึงเข้าสู่ changeout','good');
+    }else if(a==='REPEAT_ABG'){
+      score(-10); state.message='⏳ รอ ABG ซ้ำ ทำให้เสียเวลาในภาวะที่ oxygenation แย่ลง';
+      log('△ Delayed for repeat ABG (-10)');
+      feedback('ข้อมูลเพิ่มมีประโยชน์ แต่ไม่ควรทำให้ definitive action ล่าช้า -10 คะแนน');
+    }else if(a==='INCREASE_SWEEP'){
+      score(-10); state.message='⚠️ เพิ่ม sweep แล้วค่า oxygenation ไม่ดีขึ้น';
+      log('△ Increased sweep despite normal gas source (-10)');
+      feedback('ไม่แก้สาเหตุหลักใน scenario นี้ -10 คะแนน');
+    }else if(a==='REDUCE_FLOW'){
+      score(-20); state.message='❌ ลด flow โดยยังไม่ได้แก้ oxygenator failure';
+      log('✗ Reduced flow instead of preparing changeout (-20)');
+      feedback('ไม่ใช่ definitive management ใน scenario นี้ -20 คะแนน','bad');
+    }
+  }
+
+  else if(state.phase==='MANAGEMENT'){
+    if(!state.isLineClamped){
+      if(a==='NOTIFY_STOP_CLAMP'){
+        state.isPumpRunning=false; state.isLineClamped=true;
+        state.message='🔒 ทีมรับทราบ Pump stopped และวงจรถูก isolate แล้ว';
+        log('✓ Team notified + pump stopped + lines clamped');
+        feedback('ถูกต้อง: ควบคุม circuit ก่อนเริ่ม changeout','good');
+      }else if(a==='CUT_FIRST'){
+        score(-40); state.phase='GAMEOVER';
+        state.message='☠️ Game Over: attempted line change while circuit was not safely isolated';
+        log('✗ Unsafe circuit manipulation (-40)');
+        feedback('Unsafe action — scenario terminated','bad');
+      }else if(a==='PURGE_FIRST'){
+        score(-20); state.message='❌ ยังไม่ควรเริ่ม purge ก่อน isolate circuit';
+        log('✗ Purge attempted before isolation (-20)');
+        feedback('ลำดับไม่ปลอดภัย -20 คะแนน','bad');
+      }else if(a==='WAIT_SURGEON'){
+        score(-10); state.message='⏳ แจ้งทีมแล้ว แต่ยังไม่ได้ควบคุม circuit';
+        log('△ Delayed circuit control (-10)');
+        feedback('การสื่อสารสำคัญ แต่ไม่ควรทำให้ immediate circuit control ล่าช้า -10 คะแนน');
+      }
+    }else{
+      if(a==='SWAP_AND_DEAIR'){
+        state.isOxygenatorChanged=true; state.phase='RESOLUTION';
+        state.message='🔄 Oxygenator ใหม่ถูกต่อและ de-air แล้ว เตรียม reassessment';
+        log('✓ Oxygenator changed and de-aired');
+        feedback('ถูกต้อง: changeout และ de-airing เสร็จแล้ว','good');
+      }else if(a==='RESUME_EARLY'){
+        score(-40); state.phase='GAMEOVER';
+        state.message='☠️ Game Over: resumed flow before completing de-airing';
+        log('✗ Resumed before de-airing (-40)');
+        feedback('Unsafe action — scenario terminated','bad');
+      }else if(a==='CHECK_CONNECTION'){
+        score(-2); state.message='✓ ตรวจ orientation และ connection ก่อนดำเนินการต่อ';
+        log('✓ Connection check (-2 time/sequence)');
+        feedback('เป็น safety check ที่ดี แต่ยังต้องทำ definitive swap/de-air ต่อ -2 คะแนน');
+      }else if(a==='REFILL_ONLY'){
+        score(-10); state.message='⚠️ Volume ดีขึ้น แต่ oxygenator failure ยังไม่ถูกแก้';
+        log('△ Refilled without changeout (-10)');
+        feedback('ไม่ใช่ definitive treatment -10 คะแนน');
+      }
+    }
+  }
+
+  else if(state.phase==='RESOLUTION'){
+    if(a==='VERIFY_THEN_RESUME'){
+      state.isPumpRunning=true; state.isLineClamped=false;
+      state.pO2=180; state.saO2=99; state.arterialLineColor='Red';
+      state.phase='SUCCESS';
+      state.message='🎉 Success: arterial color และ gas exchange ฟื้นกลับหลัง changeout';
+      log('✓ Reassessed and resumed CPB');
+      feedback('Scenario complete','good');
+      clearInterval(timerId);
+    }else if(a==='FULL_FLOW_NOW'){
+      score(-30); state.phase='GAMEOVER';
+      state.message='☠️ Game Over: resumed full flow before reassessment';
+      log('✗ Full flow before reassessment (-30)');
+      feedback('Unsafe action — scenario terminated','bad');
+    }else if(a==='ABG_ONLY'){
+      score(-5); state.message='🧪 ABG มีประโยชน์ แต่ต้องประเมิน circuit/arterial appearance ร่วมด้วย';
+      log('△ ABG only (-5)');
+      feedback('ยังประเมินไม่ครบ -5 คะแนน');
+    }else if(a==='COLOR_ONLY'){
+      score(-5); state.message='👁️ สี arterial line ดีขึ้น แต่ควรยืนยัน gas exchange เพิ่ม';
+      log('△ Color only (-5)');
+      feedback('ยังประเมินไม่ครบ -5 คะแนน');
+    }
+  }
+
+  render();
+}
+
+function tick(){
+  if(state.phase==='GAMEOVER'||state.phase==='SUCCESS')return;
+  state.timeLeft--;
+  if(!state.isOxygenatorChanged){
+    state.pO2=Math.max(30,state.pO2-1);
+    state.saO2=Math.max(50,state.saO2-0.5);
+  }
+  if(state.timeLeft<=0){
+    state.timeLeft=0; state.phase='GAMEOVER';
+    state.message='☠️ Game Over: definitive management ไม่ทันภายในเวลาที่กำหนด';
+    log('✗ Time expired');
+    feedback('หมดเวลา','bad');
+    clearInterval(timerId);
+  }
+  render();
+}
+function startTimer(){clearInterval(timerId);timerId=setInterval(tick,1000)}
+function resetSim(){
+  state={...INITIAL,history:[],used:{}};
+  feedback('เลือก action ที่เหมาะสมที่สุดในขั้นตอนนี้');
+  startTimer(); render();
+}
+render();startTimer();
+</script>
+</body>
+</html>
